@@ -1,0 +1,106 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Keep light/dark semantics for UI controls */
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.92);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Premium purple palette */
+  --bg-deep-purple: #2b1055; /* deep purple */
+  --bg-violet: #4B2A8B;      /* requested purple */
+  --bg-indigo: #2d2a8c;      /* indigo */
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+
+  /* Subtle animated gradient background */
+  background: radial-gradient(1200px 800px at 10% 10%, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 45%),
+    linear-gradient(135deg,
+      var(--bg-deep-purple) 0%,
+      var(--bg-violet) 45%,
+      var(--bg-indigo) 100%
+    );
+  background-size: 160% 160%, 400% 400%;
+  background-position: 0% 0%, 0% 50%;
+  animation: noiseDrift 60s ease-in-out infinite, gradientShift 38s ease-in-out infinite;
+  overflow-x: hidden;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* Gentle gradient motion */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Very subtle halo drift for depth */
+@keyframes noiseDrift {
+  0% { background-position: 0% 0%, 0% 50%; }
+  50% { background-position: 100% 100%, 100% 50%; }
+  100% { background-position: 0% 0%, 0% 50%; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+    background-size: 100% 100%, 100% 100%;
+  }
+}
