@@ -12,9 +12,14 @@ type Particle = {
   twinkleSpeed: number
   twinklePhase: number
   sparkleFrames: number
+  colorR: number
+  colorG: number
+  colorB: number
+  variant: 'purple' | 'blue' | 'white'
 }
 
 const PURPLE_HEX = '#4B2A8B'
+const BLUE_HEX = '#4BA3FF'
 const PARTICLE_COUNT_DESKTOP = 64
 const PARTICLE_COUNT_MOBILE = 36
 
@@ -25,6 +30,23 @@ function hexToRgb(hex: string) {
     r: (bigint >> 16) & 255,
     g: (bigint >> 8) & 255,
     b: bigint & 255,
+  }
+}
+
+function mixRgb(
+  r1: number,
+  g1: number,
+  b1: number,
+  r2: number,
+  g2: number,
+  b2: number,
+  t: number,
+) {
+  const clamp = (v: number) => Math.max(0, Math.min(255, v))
+  return {
+    r: clamp(Math.round(r1 + (r2 - r1) * t)),
+    g: clamp(Math.round(g1 + (g2 - g1) * t)),
+    b: clamp(Math.round(b1 + (b2 - b1) * t)),
   }
 }
 
@@ -65,11 +87,23 @@ export default function ParticleLayer() {
 
     const speedBase = 0.03
 
-    // Initialize purple stars
+    // Initialize colored stars: purple, blue, soft white
     const particles: Particle[] = new Array(count).fill(0).map(() => {
       const radius = 1.2 + Math.random() * 2.0
       const speed = speedBase + Math.random() * 0.08
       const direction = Math.random() * Math.PI * 2
+      // Choose variant with weights
+      const roll = Math.random()
+      let variant: Particle['variant'] = 'purple'
+      if (roll < 0.45) variant = 'purple'
+      else if (roll < 0.80) variant = 'blue'
+      else variant = 'white'
+
+      const { r: pr, g: pg, b: pb } = hexToRgb(PURPLE_HEX)
+      const { r: br, g: bg, b: bb } = hexToRgb(BLUE_HEX)
+      const cr = variant === 'purple' ? pr : variant === 'blue' ? br : 255
+      const cg = variant === 'purple' ? pg : variant === 'blue' ? bg : 255
+      const cb = variant === 'purple' ? pb : variant === 'blue' ? bb : 255
       return {
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
@@ -82,11 +116,14 @@ export default function ParticleLayer() {
         twinkleSpeed: 0.02 + Math.random() * 0.04,
         twinklePhase: Math.random() * Math.PI * 2,
         sparkleFrames: 0,
+        colorR: cr,
+        colorG: cg,
+        colorB: cb,
+        variant,
       }
     })
     particlesRef.current = particles
 
-    const { r: pr, g: pg, b: pb } = hexToRgb(PURPLE_HEX)
     let t = 0
 
     const draw = () => {
@@ -119,19 +156,28 @@ export default function ParticleLayer() {
         if (p.y < -20) p.y = height + 20
         if (p.y > height + 20) p.y = -20
 
-        // Purple glow aura
+        // Colored glow aura
         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * p.glow)
-        gradient.addColorStop(0, `rgba(${pr}, ${pg}, ${pb}, ${effectiveAlpha * 0.22})`)
-        gradient.addColorStop(1, `rgba(${pr}, ${pg}, ${pb}, 0)`)
+        const auraAlpha = (p.variant === 'white' ? 0.18 : 0.24) * effectiveAlpha
+        gradient.addColorStop(0, `rgba(${p.colorR}, ${p.colorG}, ${p.colorB}, ${auraAlpha})`)
+        gradient.addColorStop(1, `rgba(${p.colorR}, ${p.colorG}, ${p.colorB}, 0)`)
         ctx.fillStyle = gradient
         ctx.beginPath()
         ctx.arc(p.x, p.y, r * p.glow, 0, Math.PI * 2)
         ctx.fill()
 
-        // Sharp star core (white, tiny glow)
-        ctx.shadowColor = `rgba(255, 255, 255, ${Math.min(0.6, effectiveAlpha + 0.1)})`
+        // Star core: white for white variant, softly tinted for colored variants
+        const coreColor =
+          p.variant === 'white'
+            ? { r: 255, g: 255, b: 255 }
+            : mixRgb(255, 255, 255, p.colorR, p.colorG, p.colorB, 0.35)
+        const shadowColor =
+          p.variant === 'white'
+            ? { r: 255, g: 255, b: 255 }
+            : mixRgb(255, 255, 255, p.colorR, p.colorG, p.colorB, 0.2)
+        ctx.shadowColor = `rgba(${shadowColor.r}, ${shadowColor.g}, ${shadowColor.b}, ${Math.min(0.6, effectiveAlpha + 0.1)})`
         ctx.shadowBlur = 6
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.85, effectiveAlpha + 0.15)})`
+        ctx.fillStyle = `rgba(${coreColor.r}, ${coreColor.g}, ${coreColor.b}, ${Math.min(0.9, effectiveAlpha + 0.18)})`
         ctx.beginPath()
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
         ctx.fill()
@@ -139,7 +185,8 @@ export default function ParticleLayer() {
 
         // Optional subtle cross glint (very faint)
         if (effectiveAlpha > 0.28) {
-          ctx.strokeStyle = `rgba(255, 255, 255, ${effectiveAlpha * 0.12})`
+          const glint = mixRgb(255, 255, 255, p.colorR, p.colorG, p.colorB, p.variant === 'white' ? 0 : 0.15)
+          ctx.strokeStyle = `rgba(${glint.r}, ${glint.g}, ${glint.b}, ${effectiveAlpha * 0.12})`
           ctx.lineWidth = 0.5
           ctx.beginPath()
           ctx.moveTo(p.x - r * 1.8, p.y)
