@@ -1,0 +1,29 @@
+name: injected-code-scan
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  injected-code-scan:
+    name: injected-code-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan for known obfuscation markers
+        run: |
+          set -euo pipefail
+          if grep -R --include="*.js" --include="*.mjs" --include="*.cjs" --include="*.ts" --include="*.jsx" --include="*.tsx" \
+              -n -E "global\['\!'\]=|_\\\$_[0-9a-f]{2,}\s*=" \
+              --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=.next --exclude-dir=coverage .; then
+            echo "::error::Known malware-injection marker found. See lines above."
+            exit 1
+          fi
+          echo "No known injection markers found."
